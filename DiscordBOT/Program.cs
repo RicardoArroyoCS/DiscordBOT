@@ -10,7 +10,8 @@ namespace DiscordBOT
 
         public async Task MainAsync()
         {
-
+            string token = BotConfiguration.Token;
+            Bot bot = new Bot(token);
         }
     }
 }
