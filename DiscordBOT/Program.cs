@@ -1,10 +1,17 @@
-﻿using System;
+﻿using Discord.Commands;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace DiscordBOT
 {
     public class Program
     {
+        private CommandService _commands;
+        private IServiceProvider _services;
+
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
@@ -12,6 +19,10 @@ namespace DiscordBOT
         {
             string token = BotConfiguration.Token;
             Bot bot = new Bot(token);
+            bot.LoginAndStart();
+
+            await Task.Delay(-1);
         }
+
     }
 }
