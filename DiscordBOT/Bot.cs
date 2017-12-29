@@ -28,6 +28,7 @@ namespace DiscordBOT
             InitializeServicesAndEvents();
         }
 
+        #region Properties
         public string Name
         {
             get;
@@ -53,6 +54,7 @@ namespace DiscordBOT
         {
             get;
         }
+        #endregion
 
         #region Initialize
         private void InitializeServicesAndEvents()
@@ -63,6 +65,8 @@ namespace DiscordBOT
                         .BuildServiceProvider();
 
             Commands.AddModuleAsync<Info>();
+            Commands.AddModuleAsync<Nonsense>();
+            Commands.AddModuleAsync<Reputation>();
 
             DiscordClient.MessageReceived += DiscordClient_MessageReceived;
         }

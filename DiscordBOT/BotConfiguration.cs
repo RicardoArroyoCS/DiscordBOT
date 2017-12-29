@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace DiscordBOT
@@ -18,7 +19,7 @@ namespace DiscordBOT
         {
             get
             {
-                if(_builder == null)
+                if (_builder == null)
                 {
                     try
                     {
@@ -26,7 +27,7 @@ namespace DiscordBOT
                             .SetBasePath(Directory.GetCurrentDirectory())
                             .AddJsonFile("appsettings.json");
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         throw new Exception("appsettings.json File Not Found");
                     }
@@ -52,6 +53,23 @@ namespace DiscordBOT
                 }
 
                 return token;
+            }
+        }
+
+        public static List<string> Nonsense
+        {
+            get
+            {
+                List<string> nonsense = null;
+                try
+                {
+                    nonsense = Configuration.GetSection("nonsense").AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Value)).Select(r => r.Value).ToList();
+                }
+                catch(Exception ex)
+                {
+                    throw new ConfigurationSettingNotFound("nonsense not found in configuration file. Error message:"+ ex.Message);
+                }
+                return nonsense;
             }
         }
 

@@ -8,10 +8,18 @@ namespace DiscordBOT.Commands
 {
     public class Nonsense: ModuleBase<SocketCommandContext>
     {
-        //[Command("say")]
-        //public async Task Perform(string noParam = null)
-        //{
+        [Command("nonsense")]
+        [Summary("Echos nonsense.")]
+        public async Task SayNonsense()
+        {
+            List<string> nonsense = BotConfiguration.Nonsense;
+            Random random = new Random();
 
-        //}
+            int randInt = random.Next(0, nonsense.Count - 1);
+            string response = nonsense[randInt];
+
+            await ReplyAsync(response);
+
+        }
     }
 }
