@@ -9,9 +9,6 @@ namespace DiscordBOT
 {
     public class Program
     {
-        private CommandService _commands;
-        private IServiceProvider _services;
-
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 

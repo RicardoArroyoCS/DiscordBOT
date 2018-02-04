@@ -14,6 +14,9 @@ namespace DiscordBOT
     public class BotConfiguration
     {
         private static IConfigurationBuilder _builder = null;
+        private static string _token = null;
+        private static List<string> _nonsense = null;
+        private static string _dbConnectionString = null;
 
         public static IConfigurationRoot Configuration
         {
@@ -37,22 +40,44 @@ namespace DiscordBOT
             }
         }
 
+        public static string DatabaseConnectionString
+        {
+            get
+            {
+                if(_dbConnectionString == null)
+                {
+                    try
+                    {
+                        _dbConnectionString = Configuration["connectionString"];
+                    }
+                    catch (Exception)
+                    {
+                        throw new ConfigurationSettingNotFound("bot:token not found in configuration file");
+                    }
+                }
+
+                return _dbConnectionString;
+            }
+        }
+
+
         public static string Token
         {
             get
             {
-                string token = string.Empty;
-
-                try
+                if(_token == null)
                 {
-                    token = Configuration["bot:token"];
-                }
-                catch(Exception)
-                {
-                    throw new ConfigurationSettingNotFound("bot:token not found in configuration file");
+                    try
+                    {
+                        _token = Configuration["bot:token"];
+                    }
+                    catch(Exception)
+                    {
+                        throw new ConfigurationSettingNotFound("bot:token not found in configuration file");
+                    }
                 }
 
-                return token;
+                return _token;
             }
         }
 
@@ -60,16 +85,18 @@ namespace DiscordBOT
         {
             get
             {
-                List<string> nonsense = null;
-                try
+                if(_nonsense == null)
                 {
-                    nonsense = Configuration.GetSection("nonsense").AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Value)).Select(r => r.Value).ToList();
+                    try
+                    {
+                        _nonsense = Configuration.GetSection("nonsense").AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Value)).Select(r => r.Value).ToList();
+                    }
+                    catch(Exception ex)
+                    {
+                        throw new ConfigurationSettingNotFound("nonsense not found in configuration file. Error message:"+ ex.Message);
+                    }
                 }
-                catch(Exception ex)
-                {
-                    throw new ConfigurationSettingNotFound("nonsense not found in configuration file. Error message:"+ ex.Message);
-                }
-                return nonsense;
+                return _nonsense;
             }
         }
 
