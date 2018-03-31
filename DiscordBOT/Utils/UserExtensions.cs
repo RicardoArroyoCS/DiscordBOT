@@ -52,6 +52,10 @@ namespace DiscordBOT.Utils
                     output = -1;
                     break;
             }
+            if(output == 0 && int.TryParse(value, out int reputationValue))
+            {
+                output = reputationValue;
+            }
 
             return output != 0;
         }

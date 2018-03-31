@@ -67,6 +67,8 @@ namespace DiscordBOT
             Commands.AddModuleAsync<Info>();
             Commands.AddModuleAsync<Nonsense>();
             Commands.AddModuleAsync<Reputation>();
+            Commands.AddModuleAsync<Shop>();
+            Commands.AddModuleAsync<Status>();
 
             DiscordClient.MessageReceived += DiscordClient_MessageReceived;
         }

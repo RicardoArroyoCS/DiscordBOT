@@ -16,37 +16,36 @@ namespace DiscordBOT.Commands
         [Summary("Returns the Rep value associated with a user")]
         public async Task RepAsync()
         {
-            IUser user = Context.User;
-            int userId = user.Get_DiscriminatorInt();
-            string userName = Context.User.Username;
+            ReplyUserReputation(Context.User);
+        }
 
-            if (ReputationDataAccess.CheckOrCreateUserRecord(user))
+        [Command("rep")]
+        [Summary("Returns the Rep value associated with specified user")]
+        public async Task RepAsync(IUser user)
+        {
+            ReplyUserReputation(user);
+        }
+
+        [Command("repboard")]
+        [Summary("Posts the top 5 users with the most REP")]
+        public async Task RepBoardAsync()
+        {
+            RepBoardAsync(5);
+        }
+
+        [Command("repboard")]
+        [Summary("Posts the top number count of users with the most REP")]
+        public async Task RepBoardAsync(int count)
+        {
+            DiscordUsers discordUsers = ReputationDataAccess.GetRepBoard(count);
+            string tableFormat = "{0,-32}|{1,-12}";
+            StringBuilder stringBuilder = new StringBuilder(String.Format($"{tableFormat}{Environment.NewLine}", "UserName", "Reputation"));
+
+            foreach(DiscordUser user in discordUsers)
             {
-                ReputationDataAccess.UpdateAvailableReputation(userId);
-                string reputation = ReputationDataAccess.GetUserReputation(userId);
-
-                if (!string.IsNullOrEmpty(reputation))
-                {
-                    int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(userId);
-                    if(userAvailableRep.HasValue)
-                    {
-                        await ReplyAsync($"{userName} currently has '{reputation}' REP with '{userAvailableRep.Value}' available REP to distribute.");            
-                    }
-                    else
-                    {
-                        await ReplyAsync($"{userName} currently has '{reputation}' REP. An error occured trying to retrieve available REP.");
-                    }
-                }
-                else
-                {
-                    ReplyAsyncError($"Error Retrieving {userName}'s REP");
-                }
+                stringBuilder.Append(String.Format($"{tableFormat}{Environment.NewLine}", user.UserName, user.ReputationValue));
             }
-            else
-            {
-                ReplyErrorCreatingUserRecord();
-            }
-
+            ReplyAsyncCodeBlock(stringBuilder.ToString());
         }
 
         [Command("rep")]
@@ -56,44 +55,80 @@ namespace DiscordBOT.Commands
             IUser fromUser = Context.User;
             IUser toUser = user;
             int fromUserId = fromUser.Get_DiscriminatorInt();
-
+            if (IsUserTheClient)
+            {
+                return;
+            }
             if (ValidateReputationRequest(user, value, out int repModifierValue))
             {
                 if (ReputationDataAccess.CheckOrCreateUserRecord(toUser) && 
                     ReputationDataAccess.CheckOrCreateUserRecord(fromUser))
                 {
                     ReputationDataAccess.UpdateAvailableReputation(fromUserId);
-                    bool isAvailableToRep = ReputationDataAccess.IsUserAbleToRep(fromUserId);
+                    bool isAvailableToRep = ReputationDataAccess.IsUserAbleToRep(fromUserId, repModifierValue);
 
                     if(isAvailableToRep)
                     {
                         if (ReputationDataAccess.AddReputation(toUser.Get_DiscriminatorInt(), fromUser.Get_DiscriminatorInt(), repModifierValue))
                         {
-                            int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(fromUserId);
-                            string addedRepMessage = $"Reputation successfully added: {repModifierValue}.";
+                            int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(fromUserId);                            
+                            string addedRepMessage = $"[{toUser.Username}]: +[{repModifierValue}] REP";
                             if (userAvailableRep.HasValue)
                             {
-                                await ReplyAsync($"{addedRepMessage} {fromUser.Username} has '{userAvailableRep.Value}' available REP to distribute.");
+                                ReplyAsyncCodeBlock($"{addedRepMessage}. [{fromUser.Username}] Distributable REP: [{userAvailableRep.Value}].");
                             }
                             else
                             {
-                                await ReplyAsync($"{addedRepMessage} An error occured trying to retrieve {fromUser.Username}'s available REP.");
+                                ReplyAsyncCodeBlock($"{addedRepMessage}. An error occured trying to retrieve [{fromUser.Username}]'s available REP.");
                             }
                         }
                         else
                         {
-                            ReplyAsyncError($"Error Adding reputation to {user.Username}");
+                            ReplyAsyncError($"Error Adding reputation to [{user.Username}]");
                         }
                     }
                     else
                     {
-                        await ReplyAsync($"User {fromUser.Username} has not accumulated enough rep to give.");
+                        ReplyAsyncCodeBlock($"User [{fromUser.Username}] has not accumulated enough rep to give.");
                     }
                 }
                 else
                 {
                     ReplyErrorCreatingUserRecord();
                 }
+            }
+        }
+
+        private async void ReplyUserReputation(IUser user)
+        {
+            int userId = user.Get_DiscriminatorInt();
+            string userName = user.Username;
+
+            if (ReputationDataAccess.CheckOrCreateUserRecord(user))
+            {
+                ReputationDataAccess.UpdateAvailableReputation(userId);
+                string reputation = ReputationDataAccess.GetUserReputation(userId);
+
+                if (!string.IsNullOrEmpty(reputation))
+                {
+                    int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(userId);
+                    if (userAvailableRep.HasValue)
+                    {
+                        ReplyAsyncCodeBlock($"[{userName}]: User REP: [{reputation}]; Distributable REP: [{userAvailableRep.Value}].");
+                    }
+                    else
+                    {
+                        ReplyAsyncCodeBlock($"[{userName}]: User REP: [{reputation}]; An error occured trying to retrieve distributable REP.");
+                    }
+                }
+                else
+                {
+                    ReplyAsyncError($"Error Retrieving {userName}'s REP.");
+                }
+            }
+            else
+            {
+                ReplyErrorCreatingUserRecord();
             }
         }
 

@@ -17,6 +17,7 @@ namespace DiscordBOT
         private static string _token = null;
         private static List<string> _nonsense = null;
         private static string _dbConnectionString = null;
+        private static ulong _modId = ulong.MinValue;
 
         public static IConfigurationRoot Configuration
         {
@@ -78,6 +79,29 @@ namespace DiscordBOT
                 }
 
                 return _token;
+            }
+        }
+
+        public static ulong ModId
+        {
+            get
+            {
+                if(_modId == ulong.MinValue)
+                {
+                    try
+                    {
+                        string configurationValue = Configuration["mod:id"];
+                        if(ulong.TryParse(configurationValue, out ulong result))
+                        {
+                            _modId = result;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        throw new ConfigurationSettingNotFound("mod:id not found in configuration file");
+                    }
+                }
+                return _modId;
             }
         }
 

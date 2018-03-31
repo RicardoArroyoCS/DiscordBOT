@@ -80,8 +80,7 @@ namespace DiscordBOT.DataAccess
             catch (Exception ex)
             {
                 Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
-            }
-            
+            }            
 
             return reputation;
         }
@@ -172,6 +171,142 @@ namespace DiscordBOT.DataAccess
 
             return userReputation;
         }
+
+        public static DiscordUsers GetRepBoard(int count)
+        {
+            DiscordUsers discordUsers = new DiscordUsers();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    string query = "Select TOP (@count) [UserName], [TotalReputation] " +
+                                    "FROM [ReputationBot].[dbo].[Reputation_View]" +
+                                    "ORDER BY TotalReputation DESC";
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@count", count);
+                    try
+                    {
+                        connection.Open();
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                DiscordUser user = new DiscordUser(reader);
+                                discordUsers.Add(user);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine($"Error occured getting repboard");
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            }
+
+            return discordUsers;
+        }
+
+        public static int GetAvailableReputationToSpend(int userId)
+        {
+            int reputation = 0;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    string query = "Select [ReputationToSpend] " +
+                                    "FROM [ReputationBot].[dbo].[Reputation_View]" +
+                                    "WHERE UserID = @userId";
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    try
+                    {
+                        connection.Open();
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                if(int.TryParse(reader["ReputationToSpend"].ToString(), out int parsed))
+                                {
+                                    reputation = parsed;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error occured getting user reputation to spend: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            }
+
+            return reputation;
+        }
+
+        public static string GetUserStatusMessage(int userId)
+        {
+            string message = null;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    string query = "SELECT CustomStatus " +
+                                    "FROM [dbo].[User_Reputation_Settings] " +
+                                    "WHERE [dbo].[User_Reputation_Settings].UserID =@userId";
+
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    try
+                    {
+                        connection.Open();
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                message = reader["CustomStatus"].ToString();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error occured getting user status message: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            }
+
+            return message;
+        }
+
+        public static string GetChatMessage(UInt64 chatId)
+        {
+            return "hello";
+        }
         #endregion
 
         #region Set Data Access Methods
@@ -227,7 +362,7 @@ namespace DiscordBOT.DataAccess
                                     "(UserID, AffectedUserID, ReputationValue, DateGiven) " +
                                     "VALUES (@fromUserId, @toUserId, @reputationValue, @date);" +
                                     "UPDATE [ReputationBot].[dbo].[User_Reputation_Settings] " +
-                                    "SET AvailableReputation = (AvailableReputation - 1) " +
+                                    "SET AvailableReputation = (AvailableReputation - ABS(@reputationValue)) " +
                                     "WHERE UserID = @fromUserId;";
 
                     SqlCommand command = new SqlCommand(query, connection);
@@ -290,6 +425,120 @@ namespace DiscordBOT.DataAccess
             }
             return successfullyExecuted;
         }
+
+        public static bool UpdateAvailableReputationToSpend(int userId, int repValue)
+        {
+            bool successfullyAdded = false;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    string query = "UPDATE [dbo].[User_Reputation_Settings]" +
+                                    "SET [dbo].[User_Reputation_Settings].SpentReputation = ([dbo].[User_Reputation_Settings].SpentReputation + @reputation)" +
+                                    "WHERE[dbo].[User_Reputation_Settings].UserID = @userId";
+
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@reputation", repValue);
+                    try
+                    {
+                        connection.Open();
+                        successfullyAdded = command.ExecuteNonQuery() > 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error occured updating user reputation record: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            }
+
+            return successfullyAdded;
+        }
+
+        public static bool UpdateUserMessage(int userId, string message)
+        {
+            bool successfullyAdded = false;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    string query = "UPDATE [dbo].[User_Reputation_Settings] " +
+                                    "SET CustomStatus = @message " +
+                                    "WHERE UserID = @userId";
+                    
+
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@message", message);
+                    try
+                    {
+                        connection.Open();
+                        successfullyAdded = command.ExecuteNonQuery() > 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error occured updating user message record: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            }
+
+            return successfullyAdded;
+        }
+
+        public static bool UpdateChatStatus(UInt64 chatId, string message)
+        {
+            //bool successfullyAdded = false;
+            //try
+            //{
+            //    using (SqlConnection connection = new SqlConnection(ConnectionString))
+            //    {
+            //        string query = "UPDATE [dbo].[User_Reputation_Settings]" +
+            //                        "SET CustomStatus = @message" +
+            //                        "WHERE [dbo].[User_Reputation_Settings].UserID =@userId";
+
+
+            //        SqlCommand command = new SqlCommand(query, connection);
+            //        command.Parameters.AddWithValue("@userId", userId);
+            //        command.Parameters.AddWithValue("@message", message);
+            //        try
+            //        {
+            //            connection.Open();
+            //            successfullyAdded = command.ExecuteNonQuery() > 0;
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            Console.WriteLine($"Error occured updating user message record: {ex.ToString()}");
+            //        }
+            //        finally
+            //        {
+            //            connection.Close();
+            //        }
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error occured connecting to SQL: {ex.ToString()}");
+            //}
+
+            //return successfullyAdded;
+            return true;
+        }
         #endregion
 
         #region Helpers        
@@ -321,10 +570,10 @@ namespace DiscordBOT.DataAccess
             return UserRecordExistenceSet.Contains(userId);
         }
 
-        public static bool IsUserAbleToRep(int userId)
+        public static bool IsUserAbleToRep(int userId, int repValue)
         {
             int? userRepAvailable = GetUserReputationAvailability(userId);
-            return userRepAvailable.HasValue ? userRepAvailable.Value > 0 : false;
+            return userRepAvailable.HasValue ? userRepAvailable.Value >= Math.Abs(repValue): false;
         }
         #endregion
     }
