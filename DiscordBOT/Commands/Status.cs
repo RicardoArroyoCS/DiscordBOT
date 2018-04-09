@@ -17,7 +17,7 @@ namespace DiscordBOT.Commands
         {
             IUser user = this.Context.User;
             int userId = user.Get_DiscriminatorInt();
-            string statusMessage = ReputationDataAccess.GetUserStatusMessage(userId);
+            string statusMessage = ReputationDataAccess.Instance.GetUserStatusMessage(userId);
 
             if(string.IsNullOrEmpty(statusMessage))
             {

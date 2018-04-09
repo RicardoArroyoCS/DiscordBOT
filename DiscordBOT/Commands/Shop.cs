@@ -15,6 +15,11 @@ namespace DiscordBOT.Commands
         [Summary("Lists available shop commands while displaying a user's spendable rep")]
         public async Task ShopAsync()
         {
+            IUser user = Context.User;
+            string userName = user.Get_UserHandleName();
+            int userId = user.Get_DiscriminatorInt();
+            int availableRep = ReputationDataAccess.Instance.GetAvailableReputationToSpend(userId);
+            await ReplyAsync($"[{userName}] spendable rep: [{availableRep}]");
             await ReplyAsync(ShopManager.DisplayShopItems());
         }
 
@@ -40,7 +45,7 @@ namespace DiscordBOT.Commands
                 return;
             }
 
-            int availableRep = ReputationDataAccess.GetAvailableReputationToSpend(userId);
+            int availableRep = ReputationDataAccess.Instance.GetAvailableReputationToSpend(userId);
 
             if (availableRep < shopItem.Cost)
             {
@@ -48,14 +53,14 @@ namespace DiscordBOT.Commands
                 return;
             }
 
-            bool isSuccessfulUpdate = ReputationDataAccess.UpdateAvailableReputationToSpend(userId, shopItem.Cost);
+            bool isSuccessfulUpdate = ReputationDataAccess.Instance.UpdateAvailableReputationToSpend(userId, shopItem.Cost);
 
             if(!isSuccessfulUpdate)
             {
                 ReplyAsyncError("An error occured attempting to update reputation spent. Transaction was not complete");
                 return;
             }
-            availableRep = ReputationDataAccess.GetAvailableReputationToSpend(userId);
+            availableRep = ReputationDataAccess.Instance.GetAvailableReputationToSpend(userId);
             ReplyAsyncCodeBlock($"[{userName}] has purchased [{shopItem.Name}] for [{shopItem.Cost}]. Remaining balance: [{availableRep}]");
 
             if(!shopItem.IsManualRequest)

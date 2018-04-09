@@ -7,21 +7,15 @@ using System.Text;
 
 namespace DiscordBOT.DataAccess
 {
-    public static class ReputationDataAccess
+    public class ReputationDataAccess: DataAccess
     {
         private const int _availableRep = 50;
         private static UserRecordExistenceSet _userRecordExistenceSet = null;
         private static DateTime _defaultRepAccumulationTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 1, DateTime.MinValue.Minute, DateTime.MinValue.Second);
+        private static readonly Lazy<ReputationDataAccess> _lazy 
+            = new Lazy<ReputationDataAccess>(() => new ReputationDataAccess());
 
         #region Properties
-        private static string ConnectionString
-        {
-            get
-            {
-                return BotConfiguration.DatabaseConnectionString;
-            }
-        }
-
         private static UserRecordExistenceSet UserRecordExistenceSet
         {
             get
@@ -34,10 +28,18 @@ namespace DiscordBOT.DataAccess
                 return _userRecordExistenceSet;
             }
         }
+
+        public static ReputationDataAccess Instance
+        {
+            get
+            {
+                return _lazy.Value;
+            }
+        }
         #endregion
 
         #region Get Data Access Methods
-        public static string GetUserReputation(int userId)
+        public string GetUserReputation(int userId)
         {
             string reputation = string.Empty;
             try
@@ -85,7 +87,7 @@ namespace DiscordBOT.DataAccess
             return reputation;
         }
 
-        public static bool CheckUserRecordExists(int userId)
+        public bool CheckUserRecordExists(int userId)
         {
             bool userExists = false;
 
@@ -128,7 +130,7 @@ namespace DiscordBOT.DataAccess
             return userExists;
         }
 
-        public static int? GetUserReputationAvailability(int userId)
+        public int? GetUserReputationAvailability(int userId)
         {
             int? userReputation = null;
 
@@ -172,7 +174,7 @@ namespace DiscordBOT.DataAccess
             return userReputation;
         }
 
-        public static DiscordUsers GetRepBoard(int count)
+        public DiscordUsers GetRepBoard(int count)
         {
             DiscordUsers discordUsers = new DiscordUsers();
             try
@@ -215,7 +217,7 @@ namespace DiscordBOT.DataAccess
             return discordUsers;
         }
 
-        public static int GetAvailableReputationToSpend(int userId)
+        public int GetAvailableReputationToSpend(int userId)
         {
             int reputation = 0;
             try
@@ -260,7 +262,7 @@ namespace DiscordBOT.DataAccess
             return reputation;
         }
 
-        public static string GetUserStatusMessage(int userId)
+        public string GetUserStatusMessage(int userId)
         {
             string message = null;
             try
@@ -303,14 +305,14 @@ namespace DiscordBOT.DataAccess
             return message;
         }
 
-        public static string GetChatMessage(UInt64 chatId)
+        public string GetChatMessage(UInt64 chatId)
         {
             return "hello";
         }
         #endregion
 
         #region Set Data Access Methods
-        public static bool CreateNewUserRecord(int userId, string userName)
+        public bool CreateNewUserRecord(int userId, string userName)
         {
             bool successfullyCreated = false;
 
@@ -351,7 +353,7 @@ namespace DiscordBOT.DataAccess
             return successfullyCreated;
         }
 
-        public static bool AddReputation(int toUser, int fromUser, int repValue)
+        public bool AddReputation(int toUser, int fromUser, int repValue)
         {
             bool successfullyAdded = false;
             try
@@ -393,7 +395,7 @@ namespace DiscordBOT.DataAccess
             return successfullyAdded;
         }
 
-        public static bool UpdateAvailableReputation(int userId)
+        public bool UpdateAvailableReputation(int userId)
         {
             bool successfullyExecuted = false;
             try
@@ -426,7 +428,7 @@ namespace DiscordBOT.DataAccess
             return successfullyExecuted;
         }
 
-        public static bool UpdateAvailableReputationToSpend(int userId, int repValue)
+        public bool UpdateAvailableReputationToSpend(int userId, int repValue)
         {
             bool successfullyAdded = false;
             try
@@ -463,7 +465,7 @@ namespace DiscordBOT.DataAccess
             return successfullyAdded;
         }
 
-        public static bool UpdateUserMessage(int userId, string message)
+        public bool UpdateUserMessage(int userId, string message)
         {
             bool successfullyAdded = false;
             try
@@ -501,7 +503,7 @@ namespace DiscordBOT.DataAccess
             return successfullyAdded;
         }
 
-        public static bool UpdateChatStatus(UInt64 chatId, string message)
+        public bool UpdateChatStatus(UInt64 chatId, string message)
         {
             //bool successfullyAdded = false;
             //try
@@ -542,7 +544,7 @@ namespace DiscordBOT.DataAccess
         #endregion
 
         #region Helpers        
-        public static bool CheckOrCreateUserRecord(IUser user)
+        public bool CheckOrCreateUserRecord(IUser user)
         {
             bool isSuccess = false;
             bool existsInCache = false;
@@ -565,12 +567,12 @@ namespace DiscordBOT.DataAccess
             return isSuccess;
         }
 
-        private static bool IsUserRecordExistCache(int userId)
+        private bool IsUserRecordExistCache(int userId)
         {
             return UserRecordExistenceSet.Contains(userId);
         }
 
-        public static bool IsUserAbleToRep(int userId, int repValue)
+        public bool IsUserAbleToRep(int userId, int repValue)
         {
             int? userRepAvailable = GetUserReputationAvailability(userId);
             return userRepAvailable.HasValue ? userRepAvailable.Value >= Math.Abs(repValue): false;

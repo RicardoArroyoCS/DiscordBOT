@@ -1,6 +1,8 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
 using DiscordBOT.Commands;
+using DiscordBOT.DataAccess;
+using DiscordBOT.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -69,10 +71,21 @@ namespace DiscordBOT
             Commands.AddModuleAsync<Reputation>();
             Commands.AddModuleAsync<Shop>();
             Commands.AddModuleAsync<Status>();
+            Commands.AddModuleAsync<ChatTrigger>();
 
             DiscordClient.MessageReceived += DiscordClient_MessageReceived;
+            DiscordClient.Ready += DiscordClient_Ready;
         }
-        
+
+        private Task DiscordClient_Ready()
+        {
+            foreach (SocketGuild guild in DiscordClient.Guilds)
+            {                
+                ChatDataAccess.Instance.CreateChatSetting(guild.Get_ID(), guild.Name);
+            }
+            return null;
+        }
+
         private async Task DiscordClient_MessageReceived(SocketMessage messageParam)
         {
             // Don't process the command if it was a System Message
@@ -80,10 +93,19 @@ namespace DiscordBOT
             if (message == null) return;
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
+            bool isTrigger = false;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!(message.HasCharPrefix('!', ref argPos) || message.HasMentionPrefix(DiscordClient.CurrentUser, ref argPos))) return;
+            //if (!( (message.HasCharPrefix('!', ref argPos) || message.HasCharPrefix('>', ref argPos)) || message.HasMentionPrefix(DiscordClient.CurrentUser, ref argPos))) return;
+            //if (!(message.HasCharPrefix('!', ref argPos) || message.HasMentionPrefix(DiscordClient.CurrentUser, ref argPos))) return;
+            if (!(message.HasCharPrefix('!', ref argPos) || (isTrigger = message.HasCharPrefix('>', ref argPos)) || message.HasMentionPrefix(DiscordClient.CurrentUser, ref argPos))) return;
             // Create a Command Context
             var context = new SocketCommandContext(DiscordClient, message);
+
+            // if Trigger, get triggervalue
+            if (isTrigger)
+            {
+                argPos = 0;
+            }
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
             var result = await Commands.ExecuteAsync(context, argPos, Services);

@@ -37,7 +37,7 @@ namespace DiscordBOT.Commands
         [Summary("Posts the top number count of users with the most REP")]
         public async Task RepBoardAsync(int count)
         {
-            DiscordUsers discordUsers = ReputationDataAccess.GetRepBoard(count);
+            DiscordUsers discordUsers = ReputationDataAccess.Instance.GetRepBoard(count);
             string tableFormat = "{0,-32}|{1,-12}";
             StringBuilder stringBuilder = new StringBuilder(String.Format($"{tableFormat}{Environment.NewLine}", "UserName", "Reputation"));
 
@@ -61,17 +61,17 @@ namespace DiscordBOT.Commands
             }
             if (ValidateReputationRequest(user, value, out int repModifierValue))
             {
-                if (ReputationDataAccess.CheckOrCreateUserRecord(toUser) && 
-                    ReputationDataAccess.CheckOrCreateUserRecord(fromUser))
+                if (ReputationDataAccess.Instance.CheckOrCreateUserRecord(toUser) && 
+                    ReputationDataAccess.Instance.CheckOrCreateUserRecord(fromUser))
                 {
-                    ReputationDataAccess.UpdateAvailableReputation(fromUserId);
-                    bool isAvailableToRep = ReputationDataAccess.IsUserAbleToRep(fromUserId, repModifierValue);
+                    ReputationDataAccess.Instance.UpdateAvailableReputation(fromUserId);
+                    bool isAvailableToRep = ReputationDataAccess.Instance.IsUserAbleToRep(fromUserId, repModifierValue);
 
                     if(isAvailableToRep)
                     {
-                        if (ReputationDataAccess.AddReputation(toUser.Get_DiscriminatorInt(), fromUser.Get_DiscriminatorInt(), repModifierValue))
+                        if (ReputationDataAccess.Instance.AddReputation(toUser.Get_DiscriminatorInt(), fromUser.Get_DiscriminatorInt(), repModifierValue))
                         {
-                            int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(fromUserId);                            
+                            int? userAvailableRep = ReputationDataAccess.Instance.GetUserReputationAvailability(fromUserId);                            
                             string addedRepMessage = $"[{toUser.Username}]: +[{repModifierValue}] REP";
                             if (userAvailableRep.HasValue)
                             {
@@ -104,17 +104,18 @@ namespace DiscordBOT.Commands
             int userId = user.Get_DiscriminatorInt();
             string userName = user.Username;
 
-            if (ReputationDataAccess.CheckOrCreateUserRecord(user))
+            if (ReputationDataAccess.Instance.CheckOrCreateUserRecord(user))
             {
-                ReputationDataAccess.UpdateAvailableReputation(userId);
-                string reputation = ReputationDataAccess.GetUserReputation(userId);
+                ReputationDataAccess.Instance.UpdateAvailableReputation(userId);
+                string reputation = ReputationDataAccess.Instance.GetUserReputation(userId);
 
                 if (!string.IsNullOrEmpty(reputation))
                 {
-                    int? userAvailableRep = ReputationDataAccess.GetUserReputationAvailability(userId);
+                    int? userAvailableRep = ReputationDataAccess.Instance.GetUserReputationAvailability(userId);
+                    int spendableRep = ReputationDataAccess.Instance.GetAvailableReputationToSpend(userId);
                     if (userAvailableRep.HasValue)
                     {
-                        ReplyAsyncCodeBlock($"[{userName}]: User REP: [{reputation}]; Distributable REP: [{userAvailableRep.Value}].");
+                        ReplyAsyncCodeBlock($"[{userName}]: User REP: [{reputation}]; Distributable REP: [{userAvailableRep.Value}]; Spendable REP: [{spendableRep}]");
                     }
                     else
                     {

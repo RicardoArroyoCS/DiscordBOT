@@ -64,7 +64,7 @@ namespace DiscordBOT.Utils
 
         public static bool CheckUserSufficientRep(int userId, int repWorth)
         {
-            int repToSpend = ReputationDataAccess.GetAvailableReputationToSpend(userId);
+            int repToSpend = ReputationDataAccess.Instance.GetAvailableReputationToSpend(userId);
 
             return repToSpend >= repWorth;
         }
@@ -76,9 +76,9 @@ namespace DiscordBOT.Utils
             {
                 case _chatStatusItemName:
                     UInt64 chatId = context.Guild.Id;
-                    return ReputationDataAccess.UpdateChatStatus(chatId, string.Join(' ', requestParam));
+                    return ReputationDataAccess.Instance.UpdateChatStatus(chatId, string.Join(' ', requestParam));
                 case _statusItemName:
-                    return ReputationDataAccess.UpdateUserMessage(userId, string.Join(' ', requestParam));
+                    return ReputationDataAccess.Instance.UpdateUserMessage(userId, string.Join(' ', requestParam));
                 default:
                     Console.WriteLine($"ShopItem was not found: {item.Name}");
                     break;
